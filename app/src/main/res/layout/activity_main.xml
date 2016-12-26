@@ -32,11 +32,22 @@
         android:gravity="center"
         android:text="接收信息如下：" />
 
-    <TextView
-        android:id="@+id/show_msg"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:gravity="center_horizontal"
-        android:text="Hello World!" />
+        android:overScrollMode="never"
+        android:scrollbars="none">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/show_msg"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="@dimen/activity_vertical_margin"
+                android:gravity="center_horizontal"
+                android:text="Hello World!" />
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

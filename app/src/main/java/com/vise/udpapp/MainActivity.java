@@ -19,12 +19,14 @@ import com.vise.udp.mode.TargetInfo;
 import com.vise.udp.utils.HexUtil;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
 
     private EditText mEdit_udp;
     private Button mSend_udp;
     private TextView mShow_msg;
+    private StringBuilder mShow = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,18 +54,20 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 final PacketBuffer packetBuffer = new PacketBuffer();
                 packetBuffer.setTargetInfo(new TargetInfo().setIp("192.168.1.106").setPort(8888));
-                StringBuilder data = new StringBuilder(mEdit_udp.getText().toString());
+                String data = mEdit_udp.getText().toString();
                 ViseLog.i("send data:" + data);
-                if (data.length() % 2 != 0) {
-                    data.insert(0, "0");
+                mShow.append("自己：" + data);
+                mShow.append("\n");
+                try {
+                    packetBuffer.setBytes(data.getBytes("UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
                 }
-                packetBuffer.setBytes(HexUtil.decodeHex(data.toString().toCharArray()));
                 new Thread() {
                     @Override
                     public void run() {
                         try {
                             ViseUdp.getInstance().send(packetBuffer);
-                            ViseLog.i(ViseUdp.getInstance().getClient().discoverHosts(8888, 10000));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -135,7 +139,16 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mShow_msg.setText(packetBuffer.toString());
+                        if (packetBuffer != null) {
+                            try {
+                                String data = new String(packetBuffer.getBytes(), "UTF-8");
+                                mShow.append("对方：" + data);
+                                mShow.append("\n");
+                                mShow_msg.setText(mShow);
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
                 });
             }

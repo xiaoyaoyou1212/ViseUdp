@@ -308,6 +308,7 @@ public class Client implements IThread {
     private void broadcast(int udpPort, DatagramSocket socket) throws IOException {
         ByteBuffer dataBuffer = ByteBuffer.allocate(64);
         PacketBuffer packetBuffer = new PacketBuffer();
+        packetBuffer.setBytes(new byte[0]);
         packetBuffer.setCommand(new DiscoverHost(udpPort));
         udpConfig.getDataDispose().write(udpOperate, dataBuffer, packetBuffer);
         dataBuffer.flip();

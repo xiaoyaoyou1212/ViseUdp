@@ -1,5 +1,6 @@
 package com.vise.udp.handler;
 
+import com.vise.log.ViseLog;
 import com.vise.udp.core.inter.IData;
 
 import java.io.IOException;
@@ -19,6 +20,10 @@ public interface ServerDiscoveryHandler {
         @Override
         public boolean onDiscoverHost(DatagramChannel datagramChannel, InetSocketAddress fromAddress, IData
                 dataDispose) throws IOException {
+            ViseLog.i("onDiscoverHost:" + datagramChannel + fromAddress + dataDispose);
+            if (datagramChannel == null || fromAddress == null || dataDispose == null) {
+                return false;
+            }
             datagramChannel.send(emptyBuffer, fromAddress);
             return true;
         }

@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         try {
                             ViseUdp.getInstance().send(packetBuffer);
+                            ViseLog.i(ViseUdp.getInstance().getClient().discoverHosts(8888, 10000));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

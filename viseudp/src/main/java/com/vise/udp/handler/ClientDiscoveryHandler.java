@@ -1,5 +1,7 @@
 package com.vise.udp.handler;
 
+import com.vise.log.ViseLog;
+
 import java.net.DatagramPacket;
 
 /**
@@ -12,15 +14,18 @@ public interface ClientDiscoveryHandler {
 
         @Override
         public DatagramPacket onRequestNewDatagramPacket() {
+            ViseLog.i("onRequestNewDatagramPacket");
             return new DatagramPacket(new byte[0], 0);
         }
 
         @Override
         public void onDiscoveredHost(DatagramPacket datagramPacket) {
+            ViseLog.i("onDiscoveredHost:" + datagramPacket);
         }
 
         @Override
         public void onFinally() {
+            ViseLog.i("onFinally");
         }
 
     };

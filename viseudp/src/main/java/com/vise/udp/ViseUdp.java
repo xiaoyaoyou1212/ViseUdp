@@ -1,5 +1,6 @@
 package com.vise.udp;
 
+import com.vise.log.ViseLog;
 import com.vise.udp.config.UdpConfig;
 import com.vise.udp.core.Client;
 import com.vise.udp.core.Server;
@@ -66,12 +67,18 @@ public class ViseUdp {
         return instance;
     }
 
-    public ViseUdp stop() {
-        server.removeListener(serverListener);
-        client.removeListener(clientListener);
-        server.stop();
-        client.stop();
-        return instance;
+    public void stop() {
+        if (server != null) {
+            server.removeListener(serverListener);
+            server.stop();
+            server = null;
+        }
+        if (client != null) {
+            client.removeListener(clientListener);
+            client.stop();
+            client = null;
+        }
+        instance = null;
     }
 
     public UdpConfig getUdpConfig() {

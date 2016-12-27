@@ -1,8 +1,7 @@
 package com.vise.udpapp;
 
-import android.content.Context;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,7 +15,6 @@ import com.vise.udp.core.inter.IListener;
 import com.vise.udp.exception.UdpException;
 import com.vise.udp.mode.PacketBuffer;
 import com.vise.udp.mode.TargetInfo;
-import com.vise.udp.utils.HexUtil;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -78,6 +76,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initUdpClient() throws IOException {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    ViseUdp.getInstance().connect();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
         ViseUdp.getInstance().startClient(new IListener() {
             @Override
             public void onStart(UdpOperate udpOperate) {
@@ -104,16 +112,6 @@ public class MainActivity extends AppCompatActivity {
                 ViseLog.i(e);
             }
         });
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    ViseUdp.getInstance().connect();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
     }
 
     private void initUdpServer() throws IOException {
@@ -169,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         ViseUdp.getInstance().stop();
+        ViseLog.uprootAll();
         super.onDestroy();
     }
 }

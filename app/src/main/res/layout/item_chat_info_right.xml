@@ -29,6 +29,7 @@
             android:id="@+id/item_chat_right_msg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="#999999"
             android:layout_toLeftOf="@+id/item_chat_right_icon"
             android:gravity="center_vertical"
             android:background="@drawable/outgoing"

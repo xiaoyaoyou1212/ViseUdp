@@ -1,12 +1,22 @@
 package com.vise.udpapp;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.Button;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ListView;
 
+import com.rockerhieu.emojicon.EmojiconGridFragment;
+import com.rockerhieu.emojicon.EmojiconsFragment;
+import com.rockerhieu.emojicon.emoji.Emojicon;
+import com.vise.common_base.utils.ToastUtil;
+import com.vise.common_utils.utils.character.DateTime;
 import com.vise.log.ViseLog;
 import com.vise.log.inner.DefaultTree;
 import com.vise.udp.ViseUdp;
@@ -18,13 +28,21 @@ import com.vise.udp.mode.TargetInfo;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements EmojiconsFragment.OnEmojiconBackspaceClickedListener,
+        EmojiconGridFragment.OnEmojiconClickedListener {
 
-    private EditText mEdit_udp;
-    private Button mSend_udp;
-    private TextView mShow_msg;
-    private StringBuilder mShow = new StringBuilder();
+    private Context mContext;
+    private ListView mChatMsgLv;
+    private ImageButton mMsgFaceIb;
+    private EditText mMsgEditEt;
+    private ImageButton mMsgSendIb;
+    private FrameLayout mEmojiconFl;
+    private ChatAdapter mChatAdapter;
+    private List<ChatInfo> mChatInfoList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,44 +53,35 @@ public class MainActivity extends AppCompatActivity {
                     .configShowBorders(true);
             ViseLog.plant(new DefaultTree());
         }
+        mContext = this;
         init();
     }
 
     private void init() {
         bindViews();
-        ViseUdp.getInstance().getUdpConfig().setIp("192.168.1.106").setPort(8888);
+        initData();
+        initEvent();
+    }
+
+    private void bindViews() {
+        mChatMsgLv = (ListView) findViewById(R.id.chat_msg_show_list);
+        mMsgFaceIb = (ImageButton) findViewById(R.id.chat_msg_face);
+        mMsgEditEt = (EditText) findViewById(R.id.chat_msg_edit);
+        mMsgSendIb = (ImageButton) findViewById(R.id.chat_msg_send);
+        mEmojiconFl = (FrameLayout) findViewById(R.id.chat_emojicons);
+    }
+
+    private void initData() {
+        mChatAdapter = new ChatAdapter(mContext);
+        mChatMsgLv.setAdapter(mChatAdapter);
+
+        ViseUdp.getInstance().getUdpConfig().setIp("192.168.1.100").setPort(8888);
         try {
             initUdpServer();
             initUdpClient();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mSend_udp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final PacketBuffer packetBuffer = new PacketBuffer();
-                packetBuffer.setTargetInfo(new TargetInfo().setIp("192.168.1.106").setPort(8888));
-                String data = mEdit_udp.getText().toString();
-                ViseLog.i("send data:" + data);
-                mShow.append("自己：" + data);
-                mShow.append("\n");
-                try {
-                    packetBuffer.setBytes(data.getBytes("UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                new Thread() {
-                    @Override
-                    public void run() {
-                        try {
-                            ViseUdp.getInstance().send(packetBuffer);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }.start();
-            }
-        });
     }
 
     private void initUdpClient() throws IOException {
@@ -140,9 +149,13 @@ public class MainActivity extends AppCompatActivity {
                         if (packetBuffer != null) {
                             try {
                                 String data = new String(packetBuffer.getBytes(), "UTF-8");
-                                mShow.append("对方：" + data);
-                                mShow.append("\n");
-                                mShow_msg.setText(mShow);
+                                ChatInfo chatInfo = new ChatInfo();
+                                chatInfo.setReceiveMsg(data);
+                                chatInfo.setReceiveTime(DateTime.getStringByFormat(new Date(), DateTime.DEFYMDHMS));
+                                chatInfo.setSend(false);
+                                chatInfo.setNickName("对方");
+                                mChatInfoList.add(chatInfo);
+                                mChatAdapter.setListAll(mChatInfoList);
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
                             }
@@ -158,10 +171,91 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void bindViews() {
-        mEdit_udp = (EditText) findViewById(R.id.edit_udp);
-        mSend_udp = (Button) findViewById(R.id.send_udp);
-        mShow_msg = (TextView) findViewById(R.id.show_msg);
+    private void initEvent() {
+        mMsgFaceIb.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mEmojiconFl.getVisibility() == View.GONE) {
+                    hideSoftInput();
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            mEmojiconFl.setVisibility(View.VISIBLE);
+                            setEmojiconFragment(false);
+                        }
+                    }, 100);
+                } else {
+                    mEmojiconFl.setVisibility(View.GONE);
+                }
+            }
+        });
+        mMsgSendIb.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mMsgEditEt.getText() != null && mMsgEditEt.getText().toString().trim().length() > 0) {
+                    sendMessage(mMsgEditEt.getText().toString());
+                    mMsgEditEt.setText("");
+                } else {
+                    ToastUtil.showToast(mContext, "消息为空，请先输入要发送的消息！");
+                }
+            }
+        });
+        mMsgEditEt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEmojiconFl.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void sendMessage(String data) {
+        final PacketBuffer packetBuffer = new PacketBuffer();
+        packetBuffer.setTargetInfo(new TargetInfo().setPort(8888));
+        ViseLog.i("send data:" + data);
+        ChatInfo chatInfo = new ChatInfo();
+        chatInfo.setSendMsg(data);
+        chatInfo.setSendTime(DateTime.getStringByFormat(new Date(), DateTime.DEFYMDHMS));
+        chatInfo.setSend(true);
+        chatInfo.setNickName("自己");
+        mChatInfoList.add(chatInfo);
+        mChatAdapter.setListAll(mChatInfoList);
+        try {
+            packetBuffer.setBytes(data.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    ViseUdp.getInstance().send(packetBuffer);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
+    private void hideSoftInput() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+    }
+
+    private void setEmojiconFragment(boolean useSystemDefault) {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.chat_emojicons, EmojiconsFragment.newInstance(useSystemDefault))
+                .commit();
+    }
+
+    @Override
+    public void onEmojiconBackspaceClicked(View v) {
+        EmojiconsFragment.backspace(mMsgEditEt);
+    }
+
+    @Override
+    public void onEmojiconClicked(Emojicon emojicon) {
+        EmojiconsFragment.input(mMsgEditEt, emojicon);
     }
 
     @Override

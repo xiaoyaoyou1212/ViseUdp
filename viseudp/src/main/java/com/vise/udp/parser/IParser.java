@@ -1,10 +1,7 @@
 package com.vise.udp.parser;
 
-import com.vise.udp.command.Command;
-import com.vise.udp.config.UdpConfig;
 import com.vise.udp.core.UdpOperate;
 import com.vise.udp.mode.PacketBuffer;
-import com.vise.udp.mode.TargetInfo;
 import com.vise.udp.utils.ByteUtil;
 
 import java.nio.ByteBuffer;
@@ -28,9 +25,6 @@ public interface IParser {
             PacketBuffer packetBuffer = new PacketBuffer();
             if (buffer != null) {
                 packetBuffer.setBytes(ByteUtil.bufferToBytes(buffer));
-                packetBuffer.setTargetInfo(new TargetInfo().setIp(UdpConfig.getInstance().getIp()
-                ).setPort(UdpConfig.getInstance().getPort()));
-                packetBuffer.setCommand(new Command());
             }
             return packetBuffer;
         }

@@ -22,7 +22,6 @@ public class ViseUdp {
     private Server server;
 
     private ViseUdp() {
-        init();
     }
 
     public static ViseUdp getInstance() {
@@ -36,12 +35,8 @@ public class ViseUdp {
         return instance;
     }
 
-    private void init() {
-        client = new Client();
-        server = new Server();
-    }
-
     public ViseUdp startClient(IListener listener) throws IOException {
+        client = new Client();
         this.clientListener = listener;
         client.start();
         client.addListener(listener);
@@ -49,6 +44,7 @@ public class ViseUdp {
     }
 
     public ViseUdp startServer(IListener listener) throws IOException {
+        server = new Server();
         this.serverListener = listener;
         server.addListener(listener);
         server.bind(udpConfig.getPort());

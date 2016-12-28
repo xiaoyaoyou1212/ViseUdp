@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements EmojiconsFragment
         mChatAdapter = new ChatAdapter(mContext);
         mChatMsgLv.setAdapter(mChatAdapter);
 
-        ViseUdp.getInstance().getUdpConfig().setIp("192.168.1.100").setPort(8888).setParser(new
+        ViseUdp.getInstance().getUdpConfig().setIp("10.0.2.15").setPort(8888).setParser(new
                 ChatParser());
         try {
             initUdpServer();

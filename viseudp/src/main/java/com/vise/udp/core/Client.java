@@ -5,11 +5,12 @@ import com.vise.udp.command.DiscoverHost;
 import com.vise.udp.command.KeepAlive;
 import com.vise.udp.common.UdpConstant;
 import com.vise.udp.config.UdpConfig;
-import com.vise.udp.core.inter.IData;
 import com.vise.udp.core.inter.IListener;
 import com.vise.udp.core.inter.IThread;
+import com.vise.udp.exception.UdpException;
 import com.vise.udp.handler.ClientDiscoveryHandler;
 import com.vise.udp.mode.PacketBuffer;
+import com.vise.udp.parser.IParser;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -57,8 +58,8 @@ public class Client implements IThread {
 
     public Client() {
         udpConfig = UdpConfig.getInstance();
-        if (udpConfig.getDataDispose() == null) {
-            udpConfig.setDataDispose(IData.DEFAULT);
+        if (udpConfig.getParser() == null) {
+            udpConfig.setParser(IParser.DEFAULT);
         }
         if (udpConfig.getBufferSize() == 0) {
             udpConfig.setBufferSize(UdpConstant.OBJECT_BUFFER_SIZE);
@@ -66,10 +67,11 @@ public class Client implements IThread {
         if (udpConfig.getClientDiscoveryHandler() == null) {
             udpConfig.setDiscoveryHandler(ClientDiscoveryHandler.DEFAULT);
         }
-        udpOperate = new UdpOperate(udpConfig.getDataDispose(), udpConfig.getBufferSize());
+        udpOperate = new UdpOperate(udpConfig.getParser(), udpConfig.getBufferSize());
         try {
             selector = Selector.open();
         } catch (IOException ex) {
+            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Error opening selector."));
             throw new RuntimeException("Error opening selector.", ex);
         }
     }
@@ -98,6 +100,7 @@ public class Client implements IThread {
             }
 
         } catch (IOException ex) {
+            ViseLog.e(new UdpException().setException(ex));
             close();
             throw ex;
         }
@@ -187,7 +190,7 @@ public class Client implements IThread {
                             if (udpOperate.readFromAddress() == null) continue;
                             PacketBuffer packetBuffer = udpOperate.readPacketBuffer();
                             if (packetBuffer == null) continue;
-                            ViseLog.d(this + " received UDP: " + packetBuffer);
+                            ViseLog.i(this + " received UDP: " + packetBuffer);
                         }
                     } catch (CancelledKeyException ignored) {
                         // Connection is closed.
@@ -228,8 +231,8 @@ public class Client implements IThread {
     }
 
     @Override
-    public IData getDataDispose() {
-        return udpConfig.getDataDispose();
+    public IParser getParser() {
+        return udpConfig.getParser();
     }
 
     @Override
@@ -240,7 +243,7 @@ public class Client implements IThread {
             try {
                 update(250);
             } catch (IOException ex) {
-                ViseLog.e("Unable to update connection: " + ex.getMessage());
+                ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Unable to update connection."));
                 close();
             }
         }
@@ -262,14 +265,14 @@ public class Client implements IThread {
             try {
                 socket.receive(packet);
             } catch (SocketTimeoutException ex) {
-                ViseLog.i("Host discovery timed out.");
+                ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Host discovery timed out."));
                 return null;
             }
             ViseLog.i("Discovered server: " + packet.getAddress());
             udpConfig.getClientDiscoveryHandler().onDiscoveredHost(packet);
             return packet.getAddress();
         } catch (IOException ex) {
-            ViseLog.e("Host discovery failed." + ex);
+            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Host discovery failed."));
             return null;
         } finally {
             if (socket != null) socket.close();
@@ -289,7 +292,7 @@ public class Client implements IThread {
                 try {
                     socket.receive(packet);
                 } catch (SocketTimeoutException ex) {
-                    ViseLog.i("Host discovery timed out.");
+                    ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Host discovery timed out."));
                     return hosts;
                 }
                 ViseLog.i("Discovered server: " + packet.getAddress());
@@ -297,7 +300,7 @@ public class Client implements IThread {
                 hosts.add(packet.getAddress());
             }
         } catch (IOException ex) {
-            ViseLog.e("Host discovery failed." + ex);
+            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Host discovery failed."));
             return hosts;
         } finally {
             if (socket != null) socket.close();
@@ -310,7 +313,7 @@ public class Client implements IThread {
         PacketBuffer packetBuffer = new PacketBuffer();
         packetBuffer.setBytes(new byte[0]);
         packetBuffer.setCommand(new DiscoverHost(udpPort));
-        udpConfig.getDataDispose().write(udpOperate, dataBuffer, packetBuffer);
+        udpConfig.getParser().write(udpOperate, dataBuffer, packetBuffer);
         dataBuffer.flip();
         byte[] data = new byte[dataBuffer.limit()];
         dataBuffer.get(data);
@@ -330,6 +333,6 @@ public class Client implements IThread {
                 }
             }
         }
-        ViseLog.d("Broadcasted host discovery on port: " + udpPort);
+        ViseLog.i("BroadCasted host discovery on port: " + udpPort);
     }
 }

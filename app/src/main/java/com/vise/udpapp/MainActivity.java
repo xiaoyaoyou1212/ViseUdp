@@ -32,7 +32,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements EmojiconsFragment.OnEmojiconBackspaceClickedListener,
+public class MainActivity extends AppCompatActivity implements EmojiconsFragment
+        .OnEmojiconBackspaceClickedListener,
         EmojiconGridFragment.OnEmojiconClickedListener {
 
     private Context mContext;
@@ -75,7 +76,8 @@ public class MainActivity extends AppCompatActivity implements EmojiconsFragment
         mChatAdapter = new ChatAdapter(mContext);
         mChatMsgLv.setAdapter(mChatAdapter);
 
-        ViseUdp.getInstance().getUdpConfig().setIp("192.168.1.100").setPort(8888);
+        ViseUdp.getInstance().getUdpConfig().setIp("192.168.1.100").setPort(8888).setParser(new
+                ChatParser());
         try {
             initUdpServer();
             initUdpClient();
@@ -147,18 +149,8 @@ public class MainActivity extends AppCompatActivity implements EmojiconsFragment
                     @Override
                     public void run() {
                         if (packetBuffer != null) {
-                            try {
-                                String data = new String(packetBuffer.getBytes(), "UTF-8");
-                                ChatInfo chatInfo = new ChatInfo();
-                                chatInfo.setReceiveMsg(data);
-                                chatInfo.setReceiveTime(DateTime.getStringByFormat(new Date(), DateTime.DEFYMDHMS));
-                                chatInfo.setSend(false);
-                                chatInfo.setNickName("对方");
-                                mChatInfoList.add(chatInfo);
-                                mChatAdapter.setListAll(mChatInfoList);
-                            } catch (UnsupportedEncodingException e) {
-                                e.printStackTrace();
-                            }
+                            mChatInfoList.add((ChatInfo) packetBuffer.getCommand());
+                            mChatAdapter.setListAll(mChatInfoList);
                         }
                     }
                 });
@@ -192,7 +184,8 @@ public class MainActivity extends AppCompatActivity implements EmojiconsFragment
         mMsgSendIb.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mMsgEditEt.getText() != null && mMsgEditEt.getText().toString().trim().length() > 0) {
+                if (mMsgEditEt.getText() != null && mMsgEditEt.getText().toString().trim().length
+                        () > 0) {
                     sendMessage(mMsgEditEt.getText().toString());
                     mMsgEditEt.setText("");
                 } else {
@@ -217,6 +210,7 @@ public class MainActivity extends AppCompatActivity implements EmojiconsFragment
         chatInfo.setSendTime(DateTime.getStringByFormat(new Date(), DateTime.DEFYMDHMS));
         chatInfo.setSend(true);
         chatInfo.setNickName("自己");
+        packetBuffer.setCommand(chatInfo);
         mChatInfoList.add(chatInfo);
         mChatAdapter.setListAll(mChatInfoList);
         try {
@@ -237,7 +231,8 @@ public class MainActivity extends AppCompatActivity implements EmojiconsFragment
     }
 
     private void hideSoftInput() {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context
+                .INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
     }
 

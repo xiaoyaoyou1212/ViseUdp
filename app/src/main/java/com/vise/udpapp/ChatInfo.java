@@ -1,11 +1,13 @@
 package com.vise.udpapp;
 
+import com.vise.udp.command.Command;
+
 /**
  * @Description:
  * @author: <a href="http://www.xiaoyaoyou1212.com">DAWI</a>
  * @date: 2016-12-27 13:30
  */
-public class ChatInfo {
+public class ChatInfo extends Command {
     private int chatId;
     private String nickName;
     private boolean isSend;

@@ -3,11 +3,12 @@ package com.vise.udp.core;
 import com.vise.log.ViseLog;
 import com.vise.udp.common.UdpConstant;
 import com.vise.udp.config.UdpConfig;
-import com.vise.udp.core.inter.IData;
 import com.vise.udp.core.inter.IListener;
 import com.vise.udp.core.inter.IThread;
+import com.vise.udp.exception.UdpException;
 import com.vise.udp.handler.ServerDiscoveryHandler;
 import com.vise.udp.mode.PacketBuffer;
+import com.vise.udp.parser.IParser;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,8 +35,8 @@ public class Server implements IThread {
 
     public Server() {
         udpConfig = UdpConfig.getInstance();
-        if (udpConfig.getDataDispose() == null) {
-            udpConfig.setDataDispose(IData.DEFAULT);
+        if (udpConfig.getParser() == null) {
+            udpConfig.setParser(IParser.DEFAULT);
         }
         if (udpConfig.getBufferSize() == 0) {
             udpConfig.setBufferSize(UdpConstant.OBJECT_BUFFER_SIZE);
@@ -45,8 +46,9 @@ public class Server implements IThread {
         }
         try {
             selector = Selector.open();
-            udpOperate = new UdpOperate(udpConfig.getDataDispose(), udpConfig.getBufferSize());
+            udpOperate = new UdpOperate(udpConfig.getParser(), udpConfig.getBufferSize());
         } catch (IOException ex) {
+            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Error opening selector."));
             throw new RuntimeException("Error opening selector.", ex);
         }
     }
@@ -66,14 +68,14 @@ public class Server implements IThread {
             try {
                 if (udpPort != null) {
                     udpOperate.bind(selector, udpPort);
-                    ViseLog.d("Accepting connections on port: " + udpPort + "/UDP");
+                    ViseLog.i("Accepting connections on port: " + udpPort + "/UDP");
                 }
             } catch (IOException ex) {
                 close();
                 throw ex;
             }
         }
-        ViseLog.i("Server opened.");
+        ViseLog.d("Server opened.");
     }
 
     @Override
@@ -143,7 +145,7 @@ public class Server implements IThread {
                         try {
                             fromAddress = udpOperate.readFromAddress();
                         } catch (IOException ex) {
-                            ViseLog.e("Error reading UDP data." + ex);
+                            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Error reading UDP data."));
                             continue;
                         }
                         if (fromAddress == null) continue;
@@ -152,17 +154,14 @@ public class Server implements IThread {
                             int ops = selectionKey.readyOps();
                             if ((ops & SelectionKey.OP_READ) == SelectionKey.OP_READ) {
                                 packetBuffer = udpOperate.readPacketBuffer();
-                                ViseLog.d(this + " received UDP: " + packetBuffer);
+                                ViseLog.i(this + " received UDP: " + packetBuffer);
                             }
                         } catch (IOException ex) {
-                            if (fromUdpOperate != null) {
-                                ViseLog.e("Error reading UDP from connection: " + fromUdpOperate + ex);
-                            } else {
-                                ViseLog.e("Error reading UDP from unregistered address: " + fromAddress + ex);
-                            }
+                            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Error reading UDP from connection."));
                             continue;
                         }
                     } catch (CancelledKeyException ex) {
+                        ViseLog.e(new UdpException().setException(ex));
                         selectionKey.channel().close();
                     }
                 }
@@ -192,8 +191,8 @@ public class Server implements IThread {
     }
 
     @Override
-    public IData getDataDispose() {
-        return udpConfig.getDataDispose();
+    public IParser getParser() {
+        return udpConfig.getParser();
     }
 
     @Override
@@ -204,7 +203,7 @@ public class Server implements IThread {
             try {
                 update(250);
             } catch (IOException ex) {
-                ViseLog.e("Error updating server connections." + ex);
+                ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Error updating server connections."));
                 close();
             }
         }

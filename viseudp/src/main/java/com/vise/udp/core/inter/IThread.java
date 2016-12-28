@@ -1,5 +1,7 @@
 package com.vise.udp.core.inter;
 
+import com.vise.udp.parser.IParser;
+
 import java.io.IOException;
 
 /**
@@ -22,5 +24,5 @@ public interface IThread extends Runnable {
 
     Thread getUpdateThread();
 
-    IData getDataDispose();
+    IParser getParser();
 }

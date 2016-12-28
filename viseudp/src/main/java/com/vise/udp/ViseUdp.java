@@ -1,6 +1,5 @@
 package com.vise.udp;
 
-import com.vise.log.ViseLog;
 import com.vise.udp.config.UdpConfig;
 import com.vise.udp.core.Client;
 import com.vise.udp.core.Server;

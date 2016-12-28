@@ -2,10 +2,10 @@ package com.vise.udp.core;
 
 import com.vise.log.ViseLog;
 import com.vise.udp.common.UdpConstant;
-import com.vise.udp.core.inter.IData;
 import com.vise.udp.core.inter.IListener;
 import com.vise.udp.exception.UdpException;
 import com.vise.udp.mode.PacketBuffer;
+import com.vise.udp.parser.IParser;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -31,13 +31,13 @@ public class UdpOperate {
     private SelectionKey selectionKey;
     private int keepAliveMillis = UdpConstant.KEEP_ALIVE_MILLIS;
     private final ByteBuffer readBuffer, writeBuffer;
-    private final IData dataDispose;
+    private final IParser parser;
     private final Object writeLock = new Object();
     private long lastCommunicationTime;
     private List<IListener> listenerList = new ArrayList<>();
 
-    public UdpOperate(IData dataDispose, int bufferSize) {
-        this.dataDispose = dataDispose;
+    public UdpOperate(IParser parser, int bufferSize) {
+        this.parser = parser;
         readBuffer = ByteBuffer.allocate(bufferSize);
         writeBuffer = ByteBuffer.allocateDirect(bufferSize);
     }
@@ -91,7 +91,7 @@ public class UdpOperate {
         readBuffer.flip();
         try {
             try {
-                PacketBuffer packetBuffer = dataDispose.read(this, readBuffer);
+                PacketBuffer packetBuffer = parser.read(this, readBuffer);
                 if (readBuffer.hasRemaining())
                     throw new IOException("Incorrect number of bytes (" + readBuffer.remaining()
                             + " remaining) used to deserialize object: " + packetBuffer);
@@ -113,7 +113,7 @@ public class UdpOperate {
             try {
                 try {
                     notifySendListener(packetBuffer);
-                    dataDispose.write(this, writeBuffer, packetBuffer);
+                    parser.write(this, writeBuffer, packetBuffer);
                 } catch (Exception ex) {
                     notifyErrorListener(new UdpException().setException(ex));
                     throw new IOException("Error serializing object of type: " + packetBuffer.getClass().getName(), ex);
@@ -139,7 +139,7 @@ public class UdpOperate {
                 if (selectionKey != null) selectionKey.selector().wakeup();
             }
         } catch (IOException ex) {
-            ViseLog.e("Unable to close UDP connection." + ex);
+            ViseLog.e(new UdpException().setException(ex).setExceptionMsg("Unable to close UDP connection."));
         }
     }
 

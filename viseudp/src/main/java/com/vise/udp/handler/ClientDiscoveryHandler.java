@@ -14,18 +14,18 @@ public interface ClientDiscoveryHandler {
 
         @Override
         public DatagramPacket onRequestNewDatagramPacket() {
-            ViseLog.i("onRequestNewDatagramPacket");
+            ViseLog.d("onRequestNewDatagramPacket");
             return new DatagramPacket(new byte[0], 0);
         }
 
         @Override
         public void onDiscoveredHost(DatagramPacket datagramPacket) {
-            ViseLog.i("onDiscoveredHost:" + datagramPacket);
+            ViseLog.d("onDiscoveredHost:" + datagramPacket);
         }
 
         @Override
         public void onFinally() {
-            ViseLog.i("onFinally");
+            ViseLog.d("onFinally");
         }
 
     };

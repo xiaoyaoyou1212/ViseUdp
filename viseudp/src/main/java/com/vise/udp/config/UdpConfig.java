@@ -1,8 +1,8 @@
 package com.vise.udp.config;
 
-import com.vise.udp.core.inter.IData;
 import com.vise.udp.handler.ClientDiscoveryHandler;
 import com.vise.udp.handler.ServerDiscoveryHandler;
+import com.vise.udp.parser.IParser;
 
 /**
  * @Description:
@@ -16,7 +16,7 @@ public class UdpConfig implements IUdpConfig {
     private int port;
     private long keepAliveMillis;
     private int bufferSize;
-    private IData dataDispose;
+    private IParser parser;
     private ServerDiscoveryHandler serverDiscoveryHandler;
     private ClientDiscoveryHandler clientDiscoveryHandler;
 
@@ -60,8 +60,8 @@ public class UdpConfig implements IUdpConfig {
     }
 
     @Override
-    public IUdpConfig setDataDispose(IData dataDispose) {
-        this.dataDispose = dataDispose;
+    public IUdpConfig setParser(IParser parser) {
+        this.parser = parser;
         return instance;
     }
 
@@ -93,8 +93,8 @@ public class UdpConfig implements IUdpConfig {
         return bufferSize;
     }
 
-    public IData getDataDispose() {
-        return dataDispose;
+    public IParser getParser() {
+        return parser;
     }
 
     public ServerDiscoveryHandler getServerDiscoveryHandler() {
